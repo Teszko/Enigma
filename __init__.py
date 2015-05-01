@@ -44,7 +44,7 @@ class Enigma():
 
     @staticmethod
     def barrel_encode_rev(barrel, input_char):
-        return (Enigma.BARREL[barrel].index(input_char)+1)
+        return Enigma.itoc(Enigma.BARREL[barrel].index(input_char)+1)
 
 
 
@@ -71,3 +71,4 @@ eni.set_pinboard(['AE', 'BJ', 'CM', 'DZ', 'FL', 'GY', 'HX', 'IV', 'KW', 'NR'])
 print eni.pinboard_encode('C')
 print eni.pinboard
 print Enigma.shift_char('A', 1)
+print Enigma.barrel_encode_rev(0, 'O')
