@@ -12,8 +12,11 @@ class Enigma():
     UKW = [{
         'A': 'E', 'B': 'J', 'C': 'M', 'D': 'Z',  'F': 'L',  'G': 'Y',  'H': 'X',  'I': 'V',  'K': 'W',  'N': 'R',  
         'O': 'Q',  'P': 'U',  'S': 'T', 'E': 'A', 'J': 'B', 'M': 'C', 'Z': 'D',  'L': 'F',  'Y': 'G',  'X': 'H',
-        'V': 'I',  'W': 'K',  'R': 'N',  'Q': 'O',  'U': 'P',  'T': 'S'
-    }]
+        'V': 'I',  'W': 'K',  'R': 'N',  'Q': 'O',  'U': 'P',  'T': 'S'},
+        {
+        'A': 'Y', 'B': 'R', 'C': 'U', 'D': 'H', 'E': 'Q', 'F': 'S', 'G': 'L', 'I': 'P', 'J': 'X', 'K': 'N',
+        'M': 'O', 'T': 'Z', 'V': 'W', 'Y': 'A', 'R': 'B', 'U': 'C', 'H': 'D', 'Q': 'E', 'S': 'F', 'L': 'G',
+        'P': 'I', 'X': 'J', 'N': 'K', 'O': 'M', 'Z': 'T', 'W': 'V'}]
 
     def __init__(self, barrel_ids, barrel_positions):
         self.__barrel_L = Enigma.BARREL[barrel_ids[0]]
@@ -34,27 +37,19 @@ class Enigma():
 
     @staticmethod
     def shift_char(char, shift):
-        return Enigma.itoc((Enigma.ctoi(char) + shift) % len(Enigma.ALPHABET))
+        return Enigma.itoc((Enigma.ctoi(char) + shift - 1) % len(Enigma.ALPHABET) + 1)
 
     @staticmethod
-    def barrel_encode(barrel, input_char):
-        return barrel[Enigma.ctoi(input_char)-1]
+    def barrel_encode(barrel, input_char, rot):
+        ret = Enigma.shift_char(input_char, -rot)
+        ret = barrel[Enigma.ctoi(ret)-1]
+        return Enigma.shift_char(ret, rot)
 
     @staticmethod
-    def barrel_encode_rev(barrel, input_char):
-        return Enigma.itoc(barrel.index(input_char)+1)
-
-    @staticmethod
-    def ctoi_barrel(barrel, a):
-        return Enigma.BARREL[barrel].index(a)+1
-
-    @staticmethod
-    def itoc_barrel(barrel, i):
-        return Enigma.BARREL[barrel][i-1]
-
-    @staticmethod
-    def shift_char_barrel(barrel, char, shift):
-        return Enigma.itoc_barrel(barrel, (Enigma.ctoi_barrel(barrel, char) + shift) % len(Enigma.BARREL[barrel]))
+    def barrel_encode_rev(barrel, input_char, rot):
+        ret = Enigma.shift_char(input_char, -rot)
+        ret = Enigma.itoc(barrel.index(ret)+1)
+        return Enigma.shift_char(ret, rot)
 
     def increment_barrels(self):
         self.__barrel_R_position += 1
@@ -73,15 +68,22 @@ class Enigma():
         self.increment_barrels()
         msg = input_char
         msg = self.pinboard_encode(msg)
-        msg = Enigma.barrel_encode(self.__barrel_R, self.shift_char_barrel(2, msg, -self.__barrel_R_position))
-        msg = Enigma.barrel_encode(self.__barrel_M, self.shift_char_barrel(1, msg, self.__barrel_M_position))
-        msg = Enigma.barrel_encode(self.__barrel_L, self.shift_char_barrel(0, msg, self.__barrel_L_position))
-        msg = Enigma.UKW[0][msg]
-        msg = Enigma.barrel_encode_rev(self.__barrel_L, self.shift_char_barrel(0, msg, 0))
-        msg = Enigma.barrel_encode_rev(self.__barrel_M, self.shift_char_barrel(1, msg, -self.__barrel_M_position))
-        msg = Enigma.barrel_encode_rev(self.__barrel_R, self.shift_char_barrel(2, msg, self.__barrel_R_position))
-        msg = self.pinboard_encode(Enigma.shift_char(msg, self.__barrel_R_position))
+        msg = Enigma.barrel_encode(self.__barrel_R, msg, self.__barrel_R_position)
+        msg = Enigma.barrel_encode(self.__barrel_M, msg, self.__barrel_M_position)
+        msg = Enigma.barrel_encode(self.__barrel_L, msg, self.__barrel_L_position)
+        msg = Enigma.UKW[1][msg]
+        msg = Enigma.barrel_encode_rev(self.__barrel_L, msg, self.__barrel_L_position)
+        msg = Enigma.barrel_encode_rev(self.__barrel_M, msg, self.__barrel_M_position)
+        msg = Enigma.barrel_encode_rev(self.__barrel_R, msg, self.__barrel_R_position)
+        msg = self.pinboard_encode(msg)
         return msg
+
+    def encode_text(self, text):
+        encoded_text = ""
+        text = text.replace(" ", "")
+        for c in text:
+            encoded_text += self.encode(c)
+        return encoded_text
 
     def set_pinboard(self, connections):
         self.pinboard = {x[0]: x[1] for x in connections}
@@ -93,12 +95,19 @@ class Enigma():
         else:
             return char
 
-eni = Enigma((0, 1, 2), (24, 25, 25))
-eni.set_pinboard(['AE', 'BJ', 'CM', 'DZ', 'FL', 'GY', 'HX', 'IV', 'KW', 'NR'])
-bla1 = [eni.encode('H'), eni.encode('E'), eni.encode('L'), eni.encode('L'), eni.encode('O')]
-print bla1
 
-eni2 = Enigma((0, 1, 2), (24, 25, 25))
-eni2.set_pinboard(['AE', 'BJ', 'CM', 'DZ', 'FL', 'GY', 'HX', 'IV', 'KW', 'NR'])
-bla2 = [eni.encode(bla1[0]), eni.encode(bla1[1]), eni.encode(bla1[2]), eni.encode(bla1[3]), eni.encode(bla1[4])]
-print bla2
+
+eni = Enigma((0, 3, 2), (15, 25, 7))
+eni.set_pinboard(['AD', 'CN', 'ET', 'FL', 'GI', 'JV', 'KZ', 'PU', 'QY', 'WX'])
+code = eni.encode_text(
+"DASOB ERKOM MANDO DERWE HRMAQ TGIBT BEKAN NTXAA CHENX AACHE" +
+"NXIST GERET TETXD URQGE BUEND ELTEN EINSA TZDER HILFS KRAEF" +
+"TEKON NTEDI EBEDR OHUNG ABGEW ENDET UNDDI ERETT UNGDE RSTAD" +
+"TGEGE NXEIN SXAQT XNULL XNULL XUHRS IQERG ESTEL LTWER DENX")
+print code
+
+eni = Enigma((0, 3, 2), (15, 25, 7))
+eni.set_pinboard(['AD', 'CN', 'ET', 'FL', 'GI', 'JV', 'KZ', 'PU', 'QY', 'WX'])
+print eni.encode_text(code)
+
+print "\n***************************\n"
